@@ -1,0 +1,65 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "This is the test",
+    "section": "",
+    "text": "This is a Quarto document with both R and Python code."
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "Case Summary",
+    "section": "",
+    "text": "Case Summary\nThis is the CroqPain Case Summary  - I will add more here  - wait for it"
+  },
+  {
+    "objectID": "index.html#this-is-the-other-test",
+    "href": "index.html#this-is-the-other-test",
+    "title": "This is the test",
+    "section": "This is the other test",
+    "text": "This is the other test"
+  },
+  {
+    "objectID": "analysis.html",
+    "href": "analysis.html",
+    "title": "This is the test",
+    "section": "",
+    "text": "This is a Quarto document with both R and Python code."
+  },
+  {
+    "objectID": "analysis.html#this-is-the-other-test",
+    "href": "analysis.html#this-is-the-other-test",
+    "title": "This is the test",
+    "section": "This is the other test",
+    "text": "This is the other test"
+  },
+  {
+    "objectID": "summary.html",
+    "href": "summary.html",
+    "title": "Case Summary",
+    "section": "",
+    "text": "Case Summary\nThis is the CroqPain Case Summary  - I will add more here  - wait for it"
+  },
+  {
+    "objectID": "summary_the_construction_department_at_croqpain.html",
+    "href": "summary_the_construction_department_at_croqpain.html",
+    "title": "Case Summary",
+    "section": "",
+    "text": "Case Summary\nThis is the CroqPain Case Summary  - I will add more here  - wait for it"
+  },
+  {
+    "objectID": "analysis_the_construction_department_at_croqpain.html",
+    "href": "analysis_the_construction_department_at_croqpain.html",
+    "title": "This is the test",
+    "section": "",
+    "text": "This is a Quarto document with both R and Python code."
+  },
+  {
+    "objectID": "analysis_the_construction_department_at_croqpain.html#this-is-the-other-test",
+    "href": "analysis_the_construction_department_at_croqpain.html#this-is-the-other-test",
+    "title": "This is the test",
+    "section": "This is the other test",
+    "text": "This is the other test"
+  }
+]
