@@ -8,13 +8,10 @@ library(shinyjs)
 ui <- fluidPage(
   tags$head(
     tags$style(HTML("
-      .navbar .navbar-nav {
-        width: 100%;
-      }
-
+     
       .navbar-brand {
-        font-size: 25px; 
-        margin-bottom: 30px;
+        font-size: 17px; 
+        margin-bottom: 10px;
         font-family: 'Verdana', sans-serif; 
       }
     "))
@@ -24,12 +21,12 @@ ui <- fluidPage(
     id = "main_nav",
     title = div(class = "navbar-brand", "The Construction Department at Croq'Pain"),
     tabPanel("📊",
-               fluidPage(
-                 pickerInput("chapter", "Choose an option:",
-                                      choices = c("Case Summary", 
-                                                  "Analysis")),
-                 uiOutput("chapter")))
-
+             fluidPage(
+               pickerInput("chapter", "Choose an option:",
+                           choices = c("Case Summary", 
+                                       "Analysis")),
+               uiOutput("chapter")))
+    
     
     
   )
