@@ -2,19 +2,17 @@
 title: " "
 toc: false
 ---
-This is a Quarto document with both R and Python code.
+
 
 ```{r, include = FALSE}
 library(reticulate)
 library(tidyverse)
 ```
 
-# This is the test
-
-and this is the second test
+🚧 Under Construction 🚧
 
 
-```{r}
+```{r, include = FALSE}
 # Load the swiss dataset
 data(swiss)
 
@@ -36,7 +34,7 @@ py$regression_table <- r_to_py(regression_table)
 
 ```
 
-```{python, echo = FALSE}
+```{python, include = FALSE}
 # Python code
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -47,6 +45,3 @@ plt.show()
 
 ```
 
-## This is the other test
-
-# This is the other test test test

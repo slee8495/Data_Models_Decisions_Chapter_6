@@ -44,16 +44,16 @@
   {
     "objectID": "summary_the_construction_department_at_croqpain.html",
     "href": "summary_the_construction_department_at_croqpain.html",
-    "title": "Case Summary",
+    "title": "“The Croq ’Pain Case Study: Strategic Analytics in Action” ",
     "section": "",
-    "text": "Case Summary\nThis is the CroqPain Case Summary  - I will add more here  - wait for it"
+    "text": "Note: This summary offers a creatively rephrased perspective of the original case study. It aims to provide an engaging and understandable narrative.\n\n“The Croq ’Pain Case Study: Strategic Analytics in Action” \nPart 1 Michel Boutillon was presented with an intriguing challenge. The company, known for its delightful bakeries, was poised to expand, but the question of ‘where?’ loomed large. With a blend of curiosity and determination, Michel embarked on a quest to find the best new locations for Croq ’Pain’s stores, guided by a wealth of data from 60 existing locations.\nPart 2 Michel’s first task was like assembling a puzzle from the past. He meticulously developed a regression model using data from the first 50 stores, aiming to retrospectively predict the success of the 10 stores opened in 1994. This step was crucial; it was not just about numbers but about understanding the story behind each store’s performance and the customers they served.\nPart 3 Having honed his model, Michel turned his gaze to the future. He expanded the model to include data from all 60 stores, transforming it into a more comprehensive tool. This enhanced model was his crystal ball, offering insights into which of the ten potential locations for 1996 would not only meet but potentially exceed Croq ’Pain’s performance expectations.\nPart 4 As Michel concluded his analysis, he composed a memorandum for the Croq ’Pain leadership. This document was more than a collection of data points; it was the culmination of his journey, insights, and recommendations. Michel explained the strengths and limitations of using regression models in location selection, emphasizing the need for a balanced approach that considers both data and market dynamics.\nPart 5 With Michel’s recommendations in hand, Croq ’Pain was now better equipped to make informed decisions about its expansion. Michel’s journey through the layers of data not only provided a roadmap for the company’s growth but also highlighted the importance of analytical thinking in strategic business decisions. His story stood as a testament to the power of a single individual’s expertise in shaping a company’s future."
   },
   {
     "objectID": "analysis_the_construction_department_at_croqpain.html",
     "href": "analysis_the_construction_department_at_croqpain.html",
-    "title": "This is the test",
+    "title": "the_construction_department_at_croqpain",
     "section": "",
-    "text": "This is a Quarto document with both R and Python code."
+    "text": "🚧 Under Construction 🚧"
   },
   {
     "objectID": "analysis_the_construction_department_at_croqpain.html#this-is-the-other-test",
