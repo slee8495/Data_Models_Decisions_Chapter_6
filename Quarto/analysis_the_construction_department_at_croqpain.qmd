@@ -3,45 +3,41 @@ title: " "
 toc: false
 ---
 
-
-```{r, include = FALSE}
-library(reticulate)
+### Load R Packages
+```{r, message = FALSE}
 library(tidyverse)
-```
-
-🚧 Under Construction 🚧
-
-
-```{r, include = FALSE}
-# Load the swiss dataset
-data(swiss)
-
-# Create a correlation matrix
-correlation_matrix <- cor(swiss)
-
-# Create a regression table
-regression_table <- summary(lm(Fertility ~ ., data = swiss))
-
+library(arrow)
+library(reticulate)
+library(DT)
 
 ```
-
-```{r, include = FALSE}
-# Convert the R dataframe to a Python object
-py$swiss <- r_to_py(swiss)
-py$correlation_matrix <- r_to_py(correlation_matrix)
-py$regression_table <- r_to_py(regression_table)
-
-
-```
-
-```{python, include = FALSE}
-# Python code
+### Load Python Packages
+```{python, message = FALSE}
+import pandas as pd
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# Plot the 'Fertility' column
-sns.histplot(swiss['Fertility'])
-plt.show()
+```
+
+
+### Read the data provided (This data is provided by UCSD Rady School of Management)
+```{r, include = FALSE}
+setwd("/home/jovyan/Desktop/Desktop - Sangho’s MacBook Pro/Sangho's Business Analytics Project/Chapter 6/Data_Models_Decisions_Chapter_6_the_construction_department_at_croqpain")
+croqpain <- arrow::read_parquet("CroqPain.parquet")
+
+
+```
+
+```{r}
+croqpain %>% 
+  DT::datatable()
+```
+
+
+```{r, include = FALSE}
+# Convert the R dataframe to a Python object
+py$croqpain <- r_to_py(croqpain)
 
 ```
 
