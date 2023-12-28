@@ -1,0 +1,207 @@
+---
+title: " "
+output: html_notebook
+---
+
+### Michel's task on finding best new 10 locations challenge will best suited with Regression Analytics when other 60 Locations data is given.
+
+### I have a dataset with 60 location's information with the description below
+
+## Croq'Pain
+
+Data on store earnings and other characteristics for the Croq'Pain case. There should be a total of 60 different stores and 10 potential new outlets. The model used for forecasting should be built on data for the existing 60 stores.
+
+### Variables
+
+-   STOR: Store ID
+-   CITY: City in the which store is located. Only provided for potential new outlets
+-   EARN: Earnings in \$1,000. Operating earnings: annual sales minus annual operating costs. Operating costs exclude the fixed costs of property rent and equipment rental (all capital equipment is purchased by headquarters and rented to the stores). Operating costs include variable costs such as salaries, utilities, supplies, inventories and other expenses.
+-   K: Capital invested in the store in \$1,000. This amount is exactly equal to the purchase price of the property (or the lease, in some cases) plus the cost of all equipment and the cost of remodeling the space.
+-   SIZE: Size of store in square meters: Total area inside the store
+-   EMPL: Number of employees. Not determined until store is opened
+-   P15: Number of 15-24 year olds in a 3 km radius around site in 1,000s
+-   P25: Number of 25-34 year olds in a 3 km radius around site 1,000s
+-   P35: Number of 35-44 year olds in a 3 km radius around site 1,000s
+-   P45: Number of 45-54 year olds in a 3 km radius around site 1,000s
+-   P55: Number of persons above 55 in a 3 km radius around site 1,000s
+-   total: Total population in 3 km radius around site 1,000s
+-   INC: Average income in \$1,000 in town or neighborhood around site
+-   COMP: Number of competitors in a 1 km radius around site. Establishments considered as competitors include fast food restaurants, bars and cafes equipped providing lunch service
+-   NCOMP: Number of restaurants that do not compete directly with CroqPain in 1 km radius around site
+-   NREST: Number of non-restaurant businesses in 1 km radius around site
+-   PRICE: Monthly rent per square meter of the retail properties in the same locale.
+-   CLI = Cost of Living Index. Measures the cost of living in the immediate vicinity to the restaurant site. Aggregate of average cost of living index determined by the commerce department and additional economic measures taken by experts on site
+-   CITY: City name for potential new locations
+
+### Now I will run the corrlation table to see how each data points has the relavance to "EARN" column which is our goal to predict.
+
+Before we read the data, let me load packages for both R & Python.
+
+#### Load R Packages (R)
+
+```{r, message = FALSE}
+library(tidyverse)
+library(arrow)
+library(reticulate)
+library(DT)
+library(GGally)
+library(readr)
+library(MASS)
+library(gridExtra)
+library(patchwork)
+library(car)
+
+```
+
+
+#### Read the data provided (R)
+
+```{r, include = FALSE}
+croqpain <- arrow::read_parquet("CroqPain.parquet")
+
+
+```
+
+```{r}
+croqpain %>% 
+  DT::datatable()
+```
+
+
+<br> <br>
+
+### Before I fit a linear model, I would like to make sure the distribution of the data if it's a good data to fit a model by looking at Histogram and Scatter Plots.
+
+### I'm looking for a normally distributed data set to avoid the biased result by such as outliers.
+
+#### Creat Histograms (Python)
+
+```{r, message = FALSE}
+selected_columns <- c('EARN', 'K', 'SIZE', 'EMPL', 'total', 'P15', 'P25', 'P35', 'P45', 'P55', 'INC', 'PRICE', 'CLI')
+
+# Create a list to store plots
+plots <- list()
+
+# Loop through selected columns and create a histogram for each
+for (i in seq_along(selected_columns)) {
+    col <- selected_columns[i]
+    p <- ggplot(croqpain, aes_string(col)) +
+        geom_histogram(bins = 15, na.rm = TRUE) +
+        theme_classic() +
+        ggtitle(col)
+    plots[[i]] <- p
+}
+
+# Print all plots without indices
+invisible(lapply(plots, print))
+```
+
+### Here, I see some skewness and want to make them normal distribution.
+
+```{r, message = FALSE}
+# Selecting the relevant columns for transformation
+cols_to_transform <- c('EARN', 'K', 'SIZE', 'INC', 'PRICE', 'CLI')
+df_transformed <- croqpain[cols_to_transform]
+
+# Adding a constant to make all values positive
+min_value <- min(df_transformed, na.rm = TRUE)
+df_transformed <- df_transformed + abs(min_value)
+
+# Applying log transformation (adding a small value to avoid log(0))
+# Using log1p which is log(x + 1) to handle zero values
+df_transformed <- log1p(df_transformed)
+
+# Create a list to store plots
+transformed_plots <- list()
+
+# Plotting histograms after transformation
+for (i in seq_along(cols_to_transform)) {
+    col <- cols_to_transform[i]
+    p <- ggplot(df_transformed, aes_string(col)) +
+        geom_histogram(bins = 15, na.rm = TRUE) +
+        theme_classic() +
+        ggtitle(paste('Log Transformed', col))
+    transformed_plots[[i]] <- p
+}
+
+# Print all transformed plots without indices
+invisible(lapply(transformed_plots, print))
+```
+
+### K, Price is still Right Skewed, and CLI is left skewed. Let's fix that!
+
+```{r}
+# For right-skewed data ('K' and 'PRICE'), log transformation
+df_transformed$K_log <- log(croqpain$K + 0.01)
+df_transformed$PRICE_log <- log(croqpain$PRICE + 0.01)
+
+# For left-skewed data ('CLI'), we use a reflection (subtracting from a constant) and then log transformation
+max_cli <- max(croqpain$CLI, na.rm = TRUE) + 1  
+df_transformed$CLI_reflected_log <- log(max_cli - croqpain$CLI)
+
+# Plotting histograms after further transformations
+par(mar = c(4, 4, 0.1, 0.1))  # The numbers are the margins on the bottom, left, top, and right of the plot, respectively
+
+# Log transformed histograms
+hist(df_transformed$K_log, breaks = 15, main = 'Log Transformed K', xlab = 'K')
+hist(df_transformed$PRICE_log, breaks = 15, main = 'Log Transformed PRICE', xlab = 'PRICE')
+
+# Reflected log transformed histogram
+hist(df_transformed$CLI_reflected_log, breaks = 15, main = 'Reflected Log Transformed CLI', xlab = 'CLI')
+```
+
+### Oh, CLI is still left skewed
+
+```{r, message = FALSE}
+# Applying a square transformation to 'CLI'
+df_transformed$CLI_squared <- croqpain$CLI^2
+
+# Plotting the histogram for the squared 'CLI'
+hist(df_transformed$CLI_squared, breaks = 15, main = 'Squared Transformed CLI', xlab = 'CLI')
+```
+
+### Okay, good. Now we have a normally distributed data points.
+
+### How about Outliers? Will there be any outliers to affect the data to be normal? let's look at the scatter plots!
+
+```{r}
+# Scatter plots of EARN against other transformed variables
+predictor_columns <- c('K', 'SIZE', 'EMPL', 'P15', 'P25', 'P35', 'P45', 'P55', 'total', 'INC', 'PRICE', 'CLI')
+num_predictors <- length(predictor_columns)
+num_rows <- ceiling(num_predictors / 3)
+
+par(mfrow = c(num_rows, 3))  # Set up a grid of plots
+
+for (col in predictor_columns) {
+    x_data <- ifelse(col %in% cols_to_transform, df_transformed[[col]], croqpain[[col]])
+    y_data <- df_transformed$EARN
+    plot(x_data, y_data, xlab = paste(ifelse(col %in% cols_to_transform, 'Transformed', ''), col), 
+             ylab = 'Transformed EARN', main = paste('EARN vs', ifelse(col %in% cols_to_transform, 'Transformed', ''), col))
+}
+```
+
+## 
+
+<br>
+
+## Now, I need to find the best combination of predictor variables for the linear regression model. Using a stepwise selection method or try different combinations of variables and compare their model performance.
+
+#### I willl start with a simple model and manually add variables one by one, checking the Adjusted R-squared or another performance metric each time to see if the new variable improves the model.
+
+
+```{r}
+initial_model <- lm(EARN ~ 1, data=croqpain_transformed)
+
+# Full model: Include all potential predictors
+full_model <- lm(EARN ~ ., data=croqpain_transformed)
+
+# Stepwise model selection
+stepwise_model <- step(initial_model,
+                       scope = list(lower=initial_model, upper=full_model),
+                       direction="both",
+                       trace=0)  # Set trace=1 to see the steps
+
+# View the summary of the selected model
+summary(stepwise_model)
+
+```
