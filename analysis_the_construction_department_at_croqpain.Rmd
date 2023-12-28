@@ -86,7 +86,7 @@ plots <- list()
 for (i in seq_along(selected_columns)) {
     col <- selected_columns[i]
     p <- ggplot(croqpain, aes_string(col)) +
-        geom_histogram(bins = 15, na.rm = TRUE) +
+        geom_histogram(bins = 15, na.rm = TRUE, fill = "steelblue", color = "black") +
         theme_classic() +
         ggtitle(col)
     plots[[i]] <- p
@@ -118,7 +118,7 @@ transformed_plots <- list()
 for (i in seq_along(cols_to_transform)) {
     col <- cols_to_transform[i]
     p <- ggplot(df_transformed, aes_string(col)) +
-        geom_histogram(bins = 15, na.rm = TRUE) +
+        geom_histogram(bins = 15, na.rm = TRUE, fill = "steelblue", color = "black") +
         theme_classic() +
         ggtitle(paste('Log Transformed', col))
     transformed_plots[[i]] <- p
@@ -131,56 +131,87 @@ invisible(lapply(transformed_plots, print))
 ### K, Price is still Right Skewed, and CLI is left skewed. Let's fix that!
 
 ```{r}
-# For right-skewed data ('K' and 'PRICE'), log transformation
-df_transformed$K_log <- log(croqpain$K + 0.01)
-df_transformed$PRICE_log <- log(croqpain$PRICE + 0.01)
+# Check if 'K_log' exists in 'df_transformed'
+if (!"K_log" %in% names(df_transformed)) {
+    # If not, create 'K_log'
+    df_transformed$K_log <- log(croqpain$K + 0.01)
+}
 
-# For left-skewed data ('CLI'), we use a reflection (subtracting from a constant) and then log transformation
-max_cli <- max(croqpain$CLI, na.rm = TRUE) + 1  
-df_transformed$CLI_reflected_log <- log(max_cli - croqpain$CLI)
+# Now, create the histogram for 'K_log'
+plots[['K_log']] <- ggplot(df_transformed, aes(x = K_log)) +
+    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
+    labs(x = 'K', y = 'Count', title = 'Log Transformed K') +
+    theme_classic()
 
-# Plotting histograms after further transformations
-par(mar = c(4, 4, 0.1, 0.1))  # The numbers are the margins on the bottom, left, top, and right of the plot, respectively
+# Check if 'PRICE_log' exists in 'df_transformed'
+if (!"PRICE_log" %in% names(df_transformed)) {
+    # If not, create 'PRICE_log'
+    df_transformed$PRICE_log <- log(croqpain$PRICE + 0.01)
+}
 
-# Log transformed histograms
-hist(df_transformed$K_log, breaks = 15, main = 'Log Transformed K', xlab = 'K')
-hist(df_transformed$PRICE_log, breaks = 15, main = 'Log Transformed PRICE', xlab = 'PRICE')
+# Now, create the histogram for 'PRICE_log'
+plots[['PRICE_log']] <- ggplot(df_transformed, aes(x = PRICE_log)) +
+    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
+    labs(x = 'PRICE', y = 'Count', title = 'Log Transformed PRICE') +
+    theme_classic()
 
-# Reflected log transformed histogram
-hist(df_transformed$CLI_reflected_log, breaks = 15, main = 'Reflected Log Transformed CLI', xlab = 'CLI')
+# Check if 'CLI_reflected_log' exists in 'df_transformed'
+if (!"CLI_reflected_log" %in% names(df_transformed)) {
+    # If not, create 'CLI_reflected_log'
+    df_transformed$CLI_reflected_log <- log(max(croqpain$CLI + 1) - croqpain$CLI)
+}
+
+# Now, create the histogram for 'CLI_reflected_log'
+plots[['CLI_reflected_log']] <- ggplot(df_transformed, aes(x = CLI_reflected_log)) +
+    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
+    labs(x = 'CLI', y = 'Count', title = 'Reflected Log Transformed CLI') +
+    theme_classic()
+
+# Create a list to store the plots
+plots <- list()
+
+# Create the log transformed histograms
+plots[['K_log']] <- ggplot(df_transformed, aes(x = K_log)) +
+    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
+    labs(x = 'K', y = 'Count', title = 'Log Transformed K') +
+    theme_classic()
+
+plots[['PRICE_log']] <- ggplot(df_transformed, aes(x = PRICE_log)) +
+    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
+    labs(x = 'PRICE', y = 'Count', title = 'Log Transformed PRICE') +
+    theme_classic()
+
+# Create the reflected log transformed histogram
+plots[['CLI_reflected_log']] <- ggplot(df_transformed, aes(x = CLI_reflected_log)) +
+    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
+    labs(x = 'CLI', y = 'Count', title = 'Reflected Log Transformed CLI') +
+    theme_classic()
+
+# Print the plots
+for (p in plots) {
+    print(p)
+}
+
+
 ```
 
 ### Oh, CLI is still left skewed
 
 ```{r, message = FALSE}
+# Load the ggplot2 package
+library(ggplot2)
+
 # Applying a square transformation to 'CLI'
 df_transformed$CLI_squared <- croqpain$CLI^2
 
-# Plotting the histogram for the squared 'CLI'
-hist(df_transformed$CLI_squared, breaks = 15, main = 'Squared Transformed CLI', xlab = 'CLI')
+# Plotting the histogram for the squared 'CLI' using ggplot2
+ggplot(df_transformed, aes(x = CLI_squared)) +
+    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
+    labs(x = 'CLI', y = 'Count', title = 'Squared Transformed CLI') +
+    theme_classic()
 ```
 
-### Okay, good. Now we have a normally distributed data points.
 
-### How about Outliers? Will there be any outliers to affect the data to be normal? let's look at the scatter plots!
-
-```{r}
-# Scatter plots of EARN against other transformed variables
-predictor_columns <- c('K', 'SIZE', 'EMPL', 'P15', 'P25', 'P35', 'P45', 'P55', 'total', 'INC', 'PRICE', 'CLI')
-num_predictors <- length(predictor_columns)
-num_rows <- ceiling(num_predictors / 3)
-
-par(mfrow = c(num_rows, 3))  # Set up a grid of plots
-
-for (col in predictor_columns) {
-    x_data <- ifelse(col %in% cols_to_transform, df_transformed[[col]], croqpain[[col]])
-    y_data <- df_transformed$EARN
-    plot(x_data, y_data, xlab = paste(ifelse(col %in% cols_to_transform, 'Transformed', ''), col), 
-             ylab = 'Transformed EARN', main = paste('EARN vs', ifelse(col %in% cols_to_transform, 'Transformed', ''), col))
-}
-```
-
-## 
 
 <br>
 
@@ -190,6 +221,13 @@ for (col in predictor_columns) {
 
 
 ```{r}
+# Check if 'croqpain_transformed' exists
+if (!exists("croqpain_transformed")) {
+    # If not, create 'croqpain_transformed'
+    croqpain_transformed <- df_transformed  # Replace 'df_transformed' with the name of your transformed data frame
+}
+
+# Now, create the models
 initial_model <- lm(EARN ~ 1, data=croqpain_transformed)
 
 # Full model: Include all potential predictors
@@ -197,11 +235,10 @@ full_model <- lm(EARN ~ ., data=croqpain_transformed)
 
 # Stepwise model selection
 stepwise_model <- step(initial_model,
-                       scope = list(lower=initial_model, upper=full_model),
-                       direction="both",
-                       trace=0)  # Set trace=1 to see the steps
+                                             scope = list(lower=initial_model, upper=full_model),
+                                             direction="both",
+                                             trace=0)  # Set trace=1 to see the steps
 
 # View the summary of the selected model
 summary(stepwise_model)
-
 ```
