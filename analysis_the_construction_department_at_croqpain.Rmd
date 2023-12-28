@@ -221,23 +221,23 @@ ggplot(df_transformed, aes(x = CLI_squared)) +
 
 
 ```{r}
-# Check if 'croqpain_transformed' exists
-if (!exists("croqpain_transformed")) {
-    # If not, create 'croqpain_transformed'
-    croqpain_transformed <- df_transformed  # Replace 'df_transformed' with the name of your transformed data frame
-}
+# Copy the original data frame
+croqpain_transformed <- croqpain
 
-# Now, create the models
-initial_model <- lm(EARN ~ 1, data=croqpain_transformed)
+# Apply transformations to 'croqpain_transformed'
+# For example, if you want to apply a log transformation to the 'PRICE' column:
+croqpain_transformed$PRICE_log <- log(croqpain_transformed$PRICE + 0.01)
 
 # Full model: Include all potential predictors
 full_model <- lm(EARN ~ ., data=croqpain_transformed)
 
+# View the summary of the full model
+summary(full_model)
+
 # Stepwise model selection
-stepwise_model <- step(initial_model,
-                                             scope = list(lower=initial_model, upper=full_model),
-                                             direction="both",
-                                             trace=0)  # Set trace=1 to see the steps
+stepwise_model <- step(full_model,
+                       direction="both",
+                       trace=0)  # Set trace=1 to see the steps
 
 # View the summary of the selected model
 summary(stepwise_model)
