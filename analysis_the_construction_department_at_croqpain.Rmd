@@ -1,11 +1,17 @@
 ---
-title: " "
+title: New Location Selection on CroqPain restaurant chain
+author: Sangho Lee
+date: 2023-12-28
 output: html_notebook
 ---
 
-### Michel's task on finding best new 10 locations challenge will best suited with Regression Analytics when other 60 Locations data is given.
+<br>
 
-### I have a dataset with 60 location's information with the description below
+<br>
+
+### Michel's Task: Finding the Best 10 New Locations Using Regression Analysis with Data from 60 Existing Locations
+
+### I have a dataset containing information on 60 locations, described as follows:
 
 ## Croq'Pain
 
@@ -33,9 +39,9 @@ Data on store earnings and other characteristics for the Croq'Pain case. There s
 -   CLI = Cost of Living Index. Measures the cost of living in the immediate vicinity to the restaurant site. Aggregate of average cost of living index determined by the commerce department and additional economic measures taken by experts on site
 -   CITY: City name for potential new locations
 
-### Now I will run the corrlation table to see how each data points has the relavance to "EARN" column which is our goal to predict.
+### Now, I will generate a correlation table to examine the relevance of each data point to the "EARN" column, which is our target variable for prediction.
 
-Before we read the data, let me load packages for both R & Python.
+Before analyzing the data, let's load the necessary packages in both R.
 
 #### Load R Packages (R)
 
@@ -50,9 +56,9 @@ library(MASS)
 library(gridExtra)
 library(patchwork)
 library(car)
+library(broom)
 
 ```
-
 
 #### Read the data provided (R)
 
@@ -64,22 +70,15 @@ croqpain <- arrow::read_parquet("CroqPain.parquet")
 
 ```{r}
 croqpain %>% 
-  DT::datatable()
+    DT::datatable(options = list(scrollX = TRUE))
 ```
-
 
 <br> <br>
 
-### Before I fit a linear model, I would like to make sure the distribution of the data if it's a good data to fit a model by looking at Histogram and Scatter Plots.
-
-### I'm looking for a normally distributed data set to avoid the biased result by such as outliers.
-
-#### Creat Histograms (Python)
+### Before fitting a linear model, it’s crucial to ensure that the data distribution is suitable for such analysis. By examining histograms and scatter plots, I aim to verify if the data are normally distributed, thus minimizing potential bias caused by outliers.
 
 ```{r, message = FALSE}
 selected_columns <- c('EARN', 'K', 'SIZE', 'EMPL', 'total', 'P15', 'P25', 'P35', 'P45', 'P55', 'INC', 'PRICE', 'CLI')
-
-# Create a list to store plots
 plots <- list()
 
 # Loop through selected columns and create a histogram for each
@@ -92,15 +91,16 @@ for (i in seq_along(selected_columns)) {
     plots[[i]] <- p
 }
 
-# Print all plots without indices
 invisible(lapply(plots, print))
 ```
 
-### Here, I see some skewness and want to make them normal distribution.
+### I've observed some skewness in the data and am aiming to transform it into a normal distribution.
 
 ```{r, message = FALSE}
-# Selecting the relevant columns for transformation
+# Specify columns to transform
 cols_to_transform <- c('EARN', 'K', 'SIZE', 'INC', 'PRICE', 'CLI')
+
+# Isolate the columns to be transformed
 df_transformed <- croqpain[cols_to_transform]
 
 # Adding a constant to make all values positive
@@ -111,16 +111,22 @@ df_transformed <- df_transformed + abs(min_value)
 # Using log1p which is log(x + 1) to handle zero values
 df_transformed <- log1p(df_transformed)
 
+# Rename the transformed columns to indicate they are transformed
+names(df_transformed) <- paste0(names(df_transformed), "_transformed")
+
+# Combine the original and transformed data
+croqpain_transformed <- bind_cols(croqpain, df_transformed)
+
 # Create a list to store plots
 transformed_plots <- list()
 
 # Plotting histograms after transformation
 for (i in seq_along(cols_to_transform)) {
-    col <- cols_to_transform[i]
-    p <- ggplot(df_transformed, aes_string(col)) +
+    col_name <- paste0(cols_to_transform[i], "_transformed")
+    p <- ggplot(croqpain_transformed, aes_string(col_name)) +
         geom_histogram(bins = 15, na.rm = TRUE, fill = "steelblue", color = "black") +
         theme_classic() +
-        ggtitle(paste('Log Transformed', col))
+        ggtitle(paste('Log Transformed', cols_to_transform[i]))
     transformed_plots[[i]] <- p
 }
 
@@ -128,117 +134,168 @@ for (i in seq_along(cols_to_transform)) {
 invisible(lapply(transformed_plots, print))
 ```
 
-### K, Price is still Right Skewed, and CLI is left skewed. Let's fix that!
+### The K and Price variable is exhibiting right skewness, while the CLI variable shows left skewness. Let's address these issues to achieve a more symmetrical distribution.
 
 ```{r}
-# Check if 'K_log' exists in 'df_transformed'
-if (!"K_log" %in% names(df_transformed)) {
-    # If not, create 'K_log'
-    df_transformed$K_log <- log(croqpain$K + 0.01)
-}
+# Define the columns to transform
+cols_to_transform <- c('K', 'PRICE', 'CLI')
 
-# Now, create the histogram for 'K_log'
-plots[['K_log']] <- ggplot(df_transformed, aes(x = K_log)) +
-    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
-    labs(x = 'K', y = 'Count', title = 'Log Transformed K') +
-    theme_classic()
-
-# Check if 'PRICE_log' exists in 'df_transformed'
-if (!"PRICE_log" %in% names(df_transformed)) {
-    # If not, create 'PRICE_log'
-    df_transformed$PRICE_log <- log(croqpain$PRICE + 0.01)
-}
-
-# Now, create the histogram for 'PRICE_log'
-plots[['PRICE_log']] <- ggplot(df_transformed, aes(x = PRICE_log)) +
-    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
-    labs(x = 'PRICE', y = 'Count', title = 'Log Transformed PRICE') +
-    theme_classic()
-
-# Check if 'CLI_reflected_log' exists in 'df_transformed'
-if (!"CLI_reflected_log" %in% names(df_transformed)) {
-    # If not, create 'CLI_reflected_log'
-    df_transformed$CLI_reflected_log <- log(max(croqpain$CLI + 1) - croqpain$CLI)
-}
-
-# Now, create the histogram for 'CLI_reflected_log'
-plots[['CLI_reflected_log']] <- ggplot(df_transformed, aes(x = CLI_reflected_log)) +
-    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
-    labs(x = 'CLI', y = 'Count', title = 'Reflected Log Transformed CLI') +
-    theme_classic()
-
-# Create a list to store the plots
+# Initialize an empty list to store the plots
 plots <- list()
 
-# Create the log transformed histograms
-plots[['K_log']] <- ggplot(df_transformed, aes(x = K_log)) +
-    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
-    labs(x = 'K', y = 'Count', title = 'Log Transformed K') +
-    theme_classic()
+# Iterate over the columns to transform
+for (col in cols_to_transform) {
+    # Define the new log-transformed column name
+    log_col_name <- paste0(col, "_log")
 
-plots[['PRICE_log']] <- ggplot(df_transformed, aes(x = PRICE_log)) +
-    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
-    labs(x = 'PRICE', y = 'Count', title = 'Log Transformed PRICE') +
-    theme_classic()
+    # Check if the log-transformed variable already exists
+    if (!log_col_name %in% names(croqpain)) {
+        # If not, create the log-transformed variable
+        # Adding a small value (0.01) to avoid log(0)
+        croqpain[[log_col_name]] <- log1p(croqpain[[col]] + 0.01)
+    }
+    
+    # Create the histogram for the log-transformed variable
+    p <- ggplot(croqpain, aes_string(x = log_col_name)) +
+        geom_histogram(bins = 15, fill = "steelblue", color = "black") +
+        labs(x = col, y = 'Count', title = paste('Log Transformed', col)) +
+        theme_classic()
+    plots[[log_col_name]] <- p
+}
 
-# Create the reflected log transformed histogram
-plots[['CLI_reflected_log']] <- ggplot(df_transformed, aes(x = CLI_reflected_log)) +
-    geom_histogram(bins = 15, fill = "steelblue", color = "black") +
-    labs(x = 'CLI', y = 'Count', title = 'Reflected Log Transformed CLI') +
-    theme_classic()
+# Special handling for 'CLI' reflecting and log transformation
+if (!"CLI_reflected_log" %in% names(croqpain)) {
+    # Reflecting CLI and then applying log transformation
+    croqpain$CLI_reflected_log <- log1p(max(croqpain$CLI, na.rm = TRUE) + 1 - croqpain$CLI)
+    
+    # Create the histogram for 'CLI_reflected_log'
+    p_cli <- ggplot(croqpain, aes(x = CLI_reflected_log)) +
+        geom_histogram(bins = 15, fill = "steelblue", color = "black") +
+        labs(x = 'CLI', y = 'Count', title = 'Reflected Log Transformed CLI') +
+        theme_classic()
+    plots[['CLI_reflected_log']] <- p_cli
+}
 
 # Print the plots
-for (p in plots) {
-    print(p)
+for (plot_name in names(plots)) {
+    print(plots[[plot_name]])
 }
 
 
 ```
 
-### Oh, CLI is still left skewed
+### The CLI variable remains left-skewed; we need to take further steps to correct this skewness.
 
 ```{r, message = FALSE}
-# Load the ggplot2 package
-library(ggplot2)
-
 # Applying a square transformation to 'CLI'
-df_transformed$CLI_squared <- croqpain$CLI^2
+croqpain$CLI_squared <- croqpain$CLI^2
 
-# Plotting the histogram for the squared 'CLI' using ggplot2
-ggplot(df_transformed, aes(x = CLI_squared)) +
+# Create the histogram for the squared 'CLI'
+p_squared_cli <- ggplot(croqpain, aes(x = CLI_squared)) +
     geom_histogram(bins = 15, fill = "steelblue", color = "black") +
-    labs(x = 'CLI', y = 'Count', title = 'Squared Transformed CLI') +
+    labs(x = 'Squared CLI', y = 'Count', title = 'Squared Transformed CLI') +
     theme_classic()
+
+# Print the histogram for squared 'CLI'
+print(p_squared_cli)
 ```
-
-
 
 <br>
 
-## Now, I need to find the best combination of predictor variables for the linear regression model. Using a stepwise selection method or try different combinations of variables and compare their model performance.
+## To optimize the predictive performance of our linear regression model, we should consider identifying the most influential predictor variables. We can apply a stepwise selection technique or experiment with diverse variable combinations to evaluate their contribution to the model's accuracy.
 
-#### I willl start with a simple model and manually add variables one by one, checking the Adjusted R-squared or another performance metric each time to see if the new variable improves the model.
-
+#### We'll initiate the process with a basic linear regression model and incrementally incorporate additional predictor variables. After each inclusion, we will examine the Adjusted R-squared or an alternative performance metric to determine if the newly added variable enhances the overall model efficacy.
 
 ```{r}
-# Copy the original data frame
-croqpain_transformed <- croqpain
+# Fit the initial full model
+full_model <- lm(EARN ~ ., data=croqpain_transformed %>% dplyr::select(-CITY))
 
-# Apply transformations to 'croqpain_transformed'
-# For example, if you want to apply a log transformation to the 'PRICE' column:
-croqpain_transformed$PRICE_log <- log(croqpain_transformed$PRICE + 0.01)
-
-# Full model: Include all potential predictors
-full_model <- lm(EARN ~ ., data=croqpain_transformed)
-
-# View the summary of the full model
 summary(full_model)
 
-# Stepwise model selection
-stepwise_model <- step(full_model,
-                       direction="both",
-                       trace=0)  # Set trace=1 to see the steps
-
-# View the summary of the selected model
-summary(stepwise_model)
 ```
+
+### **Overall Model Fit:**
+
+-   **Residuals**: The range suggests some large errors in predictions, with residuals as low as -5275.4 and as high as 6234.2. This indicates variability in how well the model fits different observations.
+
+-   **Multiple R-squared**: 0.7762. Approximately 77.62% of the variability in 'EARN' is explained by the model, which is relatively high, suggesting a good fit.
+
+-   **Adjusted R-squared**: 0.6432. This is lower than the Multiple R-squared, considering the number of predictors in the model. It's a more accurate measure of fit, suggesting that some predictors might not be contributing much to the model.
+
+-   **F-statistic**: The F-statistic is 5.834 with a very low p-value (1.412e-06), indicating that the model is statistically significant and that there's a relationship between the predictors and the dependent variable.
+
+### 
+
+## Upon reviewing the model's performance, I have selected the following variables to construct my ultimate linear regression model. The rationale for each choice is detailed below.
+
+### **1. PRICE (Monthly rent per square meter)**
+
+-   **Rationale**: It has a statistically significant relationship with 'EARN' (p = 0.0311) and a positive coefficient, suggesting that stores in areas with higher rent tend to have higher earnings. This could be due to such areas generally being more prosperous or having higher foot traffic.
+
+### **2. INC (Average income in the neighborhood)**
+
+-   **Rationale**: Although not statistically significant at the 0.05 level (p = 0.0685), it's close and has a substantial positive coefficient. Higher average income might mean that residents have more disposable income, potentially leading to higher store earnings.
+
+-   **Consideration**: It's just above the conventional threshold for significance. However, given its practical relevance and close-to-significant p-value, it may still be worth considering, especially in combination with other variables.
+
+### I have crafted the final code to pinpoint optimal new locations by leveraging significant predictors identified from the model, specifically 'PRICE' and 'INC'. Here is the refined implementation:
+
+### 
+
+```{r}
+new_locations <- croqpain_transformed %>%
+  dplyr::filter(is.na(EARN)) %>%
+  dplyr::select(CITY, PRICE, INC)  
+
+# Summarizing the data to find the best locations based on 'PRICE' and 'INC'
+best_locations <- new_locations %>%
+  dplyr::group_by(CITY) %>%
+  dplyr::summarize(
+    Average_PRICE = mean(PRICE, na.rm = TRUE),
+    Average_INC = mean(INC, na.rm = TRUE)
+  ) %>%
+  dplyr::arrange(desc(Average_PRICE), desc(Average_INC)) 
+
+# Select the top locations based on the criteria
+top_locations <- head(best_locations, 10)  
+
+# View the top locations
+top_locations %>% 
+  DT::datatable()
+```
+
+# Conclusion
+
+### **Key Predictors:**
+
+-   **PRICE (Monthly rent per square meter)**: Statistically significant in the broader model, indicating that areas with higher rent tend to have higher earnings. This might be due to these areas being more affluent or having higher foot traffic.
+
+-   **INC (Average income in the neighborhood)**: Although not statistically significant at the 0.05 level in the broader model, it showed a tendency toward higher earnings in areas with higher average income. This is intuitively appealing as areas with higher income levels might have residents with more disposable income.
+
+### **Potential New Locations:**
+
+The analysis identified ten potential new locations based on the average 'PRICE' and 'INC' of the surrounding area. The top locations are as follows:
+
+1.  **Marseilles-2**: Highest average price among the potential locations and a moderate average income level.
+
+2.  **Calais**: Lower average price compared to Marseilles-2 but with a higher average income, indicating a potentially affluent customer base.
+
+3.  **Aubusson**: Similar price level to Calais but with a slightly lower average income.
+
+4.  **Torcy**: Moderate in both price and income, possibly indicating a balanced market.
+
+5.  **Dijon**: Lower average price with a relatively higher average income, might indicate a cost-effective location with a good customer base.
+
+### **Final Conclusion:**
+
+-   The locations are ranked based on 'PRICE' and 'INC', with the assumption that higher values in these variables might indicate more desirable locations due to the potential for higher earnings.
+
+-   **Marseilles-2** stands out due to its combination of a higher average price and a reasonable average income, suggesting it might be a lucrative area. However, it's also likely to come with higher operational costs.
+
+-   **Calais** and **Dijon** present interesting opportunities with their combination of higher average income levels and moderate prices, which might indicate a good balance between potential earnings and costs.
+
+### 
+
+<br>
+
+<br>
